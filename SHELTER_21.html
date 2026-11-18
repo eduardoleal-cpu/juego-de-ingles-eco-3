@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHELTER 21 — English Survival</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Staatliches&family=Rubik:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-black:#0b0f0a;
+    --bg-panel:#141a12;
+    --bg-panel-2:#1b241a;
+    --toxic:#9fd436;
+    --toxic-dim:#5f7a26;
+    --blood:#b3231f;
+    --blood-bright:#e0342c;
+    --bone:#e9ecdf;
+    --bone-dim:#9aa393;
+    --amber:#d9a441;
+    --line:#2c3627;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:var(--bg-black);
+    color:var(--bone);
+    font-family:'Rubik',sans-serif;
+    overflow:hidden;
+  }
+  #grain{
+    position:fixed;inset:0;pointer-events:none;z-index:50;
+    opacity:.05;mix-blend-mode:overlay;
+  }
+  #vignette{
+    position:fixed;inset:0;pointer-events:none;z-index:40;
+    box-shadow: inset 0 0 18vw 4vw rgba(0,0,0,.85);
+  }
+  .stencil{
+    font-family:'Staatliches',sans-serif;
+    letter-spacing:.04em;
+  }
+  #app{
+    position:relative;
+    width:100%;height:100vh;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ---------- SCREENS ---------- */
+  .screen{
+    width:100%;height:100%;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    position:relative;
+  }
+  .screen.active{display:flex;}
+
+  /* ---------- START SCREEN ---------- */
+  #start-screen{
+    background:
+      radial-gradient(ellipse at 50% 15%, rgba(159,212,54,.10), transparent 55%),
+      linear-gradient(180deg, #0b0f0a 0%, #0a0d09 100%);
+  }
+  .brand-mark{
+    font-size:14px;
+    letter-spacing:.35em;
+    color:var(--toxic-dim);
+    margin-bottom:6px;
+  }
+  .title-big{
+    font-size:clamp(46px,10vw,92px);
+    line-height:.95;
+    color:var(--bone);
+    text-align:center;
+    text-shadow: 0 0 24px rgba(159,212,54,.25);
+  }
+  .title-big span{color:var(--toxic);}
+  .subtitle{
+    max-width:520px;
+    text-align:center;
+    color:var(--bone-dim);
+    margin:14px 0 30px;
+    font-size:15px;
+    line-height:1.5;
+  }
+  .biohazard{
+    width:64px;height:64px;margin-bottom:10px;
+    filter:drop-shadow(0 0 10px rgba(159,212,54,.4));
+  }
+  .btn-primary{
+    font-family:'Staatliches',sans-serif;
+    font-size:26px;letter-spacing:.06em;
+    background:var(--toxic);
+    color:#10160c;
+    border:none;
+    padding:16px 46px;
+    border-radius:6px;
+    cursor:pointer;
+    box-shadow:0 0 0 2px #0b0f0a, 0 0 0 3px var(--toxic-dim), 0 10px 24px rgba(159,212,54,.18);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 0 2px #0b0f0a, 0 0 0 3px var(--toxic), 0 14px 28px rgba(159,212,54,.28);}
+  .btn-primary:active{transform:translateY(0);}
+  .legend-row{
+    display:flex;gap:22px;margin-top:34px;flex-wrap:wrap;justify-content:center;
+  }
+  .legend-item{
+    display:flex;align-items:center;gap:8px;
+    color:var(--bone-dim);font-size:13px;
+  }
+  .legend-dot{width:10px;height:10px;border-radius:2px;}
+
+  /* ---------- GAME SCREEN ---------- */
+  #game-screen{
+    background:linear-gradient(180deg,#0c110a,#090c07);
+    justify-content:flex-start;
+    overflow-y:auto;
+    padding-top:22px;
+    padding-bottom:30px;
+  }
+  .hud{
+    width:100%;max-width:760px;
+    display:flex;flex-direction:column;gap:10px;
+    margin-bottom:18px;
+  }
+  .hud-top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:12px;flex-wrap:wrap;
+  }
+  .wave-tag{
+    font-family:'Staatliches',sans-serif;
+    font-size:22px;letter-spacing:.05em;
+    color:var(--amber);
+  }
+  .wave-tag small{
+    display:block;font-family:'Rubik',sans-serif;
+    letter-spacing:.02em;font-size:11px;color:var(--bone-dim);
+    font-weight:500;text-transform:none;
+  }
+  .stat-block{text-align:right;}
+  .stat-block .num{
+    font-family:'Staatliches',sans-serif;font-size:26px;color:var(--bone);
+  }
+  .stat-block .lbl{font-size:11px;color:var(--bone-dim);}
+
+  .hp-row{display:flex;align-items:center;gap:10px;}
+  .hp-icon{width:20px;height:20px;flex:none;}
+  .hp-bar-track{
+    flex:1;height:16px;background:#1a1f16;border:1px solid var(--line);
+    border-radius:3px;overflow:hidden;position:relative;
+  }
+  .hp-bar-fill{
+    height:100%;background:linear-gradient(90deg,#7fae2c,var(--toxic));
+    width:100%;transition:width .35s ease;
+  }
+  .hp-bar-fill.low{background:linear-gradient(90deg,#8c2420,var(--blood-bright));}
+  .hp-num{font-size:12px;color:var(--bone-dim);min-width:34px;text-align:right;}
+
+  .danger-track{
+    width:100%;height:10px;background:#1a1f16;
+    border:1px solid var(--line);border-radius:2px;overflow:hidden;
+  }
+  .danger-fill{
+    height:100%;width:100%;
+    background:repeating-linear-gradient(135deg,var(--blood) 0 10px, #7d1815 10px 20px);
+  }
+
+  .card{
+    width:100%;max-width:760px;
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:26px 26px 22px;
+    position:relative;
+    box-shadow:0 20px 40px rgba(0,0,0,.4);
+  }
+  .card::before{
+    content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+    background:var(--toxic);border-radius:10px 0 0 10px;
+  }
+  .category-chip{
+    display:inline-block;
+    font-family:'Staatliches',sans-serif;
+    font-size:13px;letter-spacing:.08em;
+    background:rgba(159,212,54,.12);
+    color:var(--toxic);
+    border:1px solid var(--toxic-dim);
+    padding:5px 12px;border-radius:20px;
+    margin-bottom:14px;
+  }
+  .question-text{
+    font-size:clamp(19px,3.4vw,25px);
+    line-height:1.4;color:var(--bone);
+    margin-bottom:22px;
+    min-height:2.6em;
+  }
+  .question-text b{color:var(--amber);}
+  .answers-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  @media(max-width:520px){.answers-grid{grid-template-columns:1fr;}}
+  .answer-btn{
+    font-family:'Rubik',sans-serif;font-weight:500;
+    font-size:16px;
+    background:var(--bg-panel-2);
+    color:var(--bone);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:16px 14px;
+    cursor:pointer;
+    text-align:left;
+    transition:border-color .12s ease, background .12s ease, transform .1s ease;
+  }
+  .answer-btn:hover:not(:disabled){
+    border-color:var(--toxic);
+    background:#212b1e;
+  }
+  .answer-btn:active:not(:disabled){transform:scale(.98);}
+  .answer-btn:disabled{cursor:default;}
+  .answer-btn.correct{
+    background:rgba(159,212,54,.18);
+    border-color:var(--toxic);
+    color:var(--toxic);
+  }
+  .answer-btn.wrong{
+    background:rgba(179,35,31,.22);
+    border-color:var(--blood-bright);
+    color:#ff9d99;
+  }
+
+  .explanation-box{
+    display:block;margin-top:16px;padding:13px 15px;border:1px solid var(--toxic-dim);
+    border-left:4px solid var(--amber);border-radius:7px;background:rgba(159,212,54,.07);
+    color:var(--bone-dim);font-size:13px;line-height:1.5;
+  }
+  .explanation-box.show{display:block;}
+  .explanation-box strong{display:block;color:var(--amber);font-family:'Staatliches',sans-serif;font-size:17px;letter-spacing:.04em;margin-bottom:4px;}
+  .explanation-box .why-answer{color:var(--bone);}
+  .continue-btn{display:none;margin-top:10px;padding:8px 16px;border:1px solid var(--toxic-dim);border-radius:5px;background:transparent;color:var(--toxic);font-family:'Staatliches',sans-serif;font-size:16px;letter-spacing:.04em;cursor:pointer;}
+  .continue-btn.show{display:inline-block;}
+  .streak-note{
+    margin-top:16px;font-size:12px;color:var(--bone-dim);
+    display:flex;align-items:center;gap:6px;min-height:16px;
+  }
+  .streak-note b{color:var(--amber);}
+
+  /* feedback flash */
+  #flash{
+    position:fixed;inset:0;pointer-events:none;z-index:30;
+    opacity:0;transition:opacity .18s ease;
+  }
+  #flash.hit-good{background:radial-gradient(ellipse at center, rgba(159,212,54,.16), transparent 70%);}
+  #flash.hit-bad{background:radial-gradient(ellipse at center, rgba(179,35,31,.32), transparent 70%);}
+  #flash.show{opacity:1;}
+
+  #toast{
+    position:fixed;top:26px;left:50%;transform:translate(-50%,-14px);
+    font-family:'Staatliches',sans-serif;font-size:20px;letter-spacing:.05em;
+    padding:10px 22px;border-radius:6px;
+    background:var(--bg-panel);border:1px solid var(--line);
+    opacity:0;transition:all .22s ease;z-index:60;pointer-events:none;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0);}
+  #toast.good{color:var(--toxic);border-color:var(--toxic-dim);}
+  #toast.bad{color:var(--blood-bright);border-color:var(--blood);}
+
+  /* ---------- END SCREEN ---------- */
+  #end-screen{
+    background:linear-gradient(180deg,#0b0f0a,#090c07);
+  }
+  #end-title{
+    font-size:clamp(40px,9vw,74px);
+    text-align:center;line-height:.95;
+  }
+  #end-title.win{color:var(--toxic);text-shadow:0 0 26px rgba(159,212,54,.3);}
+  #end-title.lose{color:var(--blood-bright);text-shadow:0 0 26px rgba(179,35,31,.35);}
+  #end-sub{color:var(--bone-dim);margin:10px 0 28px;text-align:center;max-width:480px;font-size:14px;}
+  .stats-panel{
+    display:flex;gap:0;
+    background:var(--bg-panel);border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;margin-bottom:30px;
+  }
+  .stats-panel .cell{
+    padding:16px 26px;text-align:center;border-right:1px solid var(--line);
+  }
+  .stats-panel .cell:last-child{border-right:none;}
+  .stats-panel .cell .num{font-family:'Staatliches',sans-serif;font-size:28px;color:var(--bone);}
+  .stats-panel .cell .lbl{font-size:11px;color:var(--bone-dim);margin-top:2px;}
+  .end-btn-row{display:flex;gap:14px;}
+  .btn-secondary{
+    font-family:'Staatliches',sans-serif;font-size:18px;letter-spacing:.05em;
+    background:transparent;color:var(--bone-dim);
+    border:1px solid var(--line);padding:12px 26px;border-radius:6px;cursor:pointer;
+  }
+  .btn-secondary:hover{color:var(--bone);border-color:var(--bone-dim);}
+
+  .credit{
+    position:fixed;bottom:10px;right:14px;font-size:10px;color:#3a4534;letter-spacing:.03em;
+  }
+
+  #tutorial-screen{background:radial-gradient(ellipse at 50% 15%,rgba(159,212,54,.10),transparent 55%),#0b0f0a;overflow-y:auto;}
+  .tutorial-card{width:min(760px,100%);background:var(--bg-panel);border:1px solid var(--line);border-radius:12px;padding:26px;margin:18px 0;}
+  .tutorial-card h2{font-family:'Staatliches',sans-serif;color:var(--toxic);font-size:30px;margin:0 0 12px;}
+  .tutorial-card li{margin:10px 0;color:var(--bone-dim);line-height:1.45;}
+  .difficulty-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 22px;}
+  .difficulty-btn{flex:1;min-width:110px;padding:12px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg-panel-2);color:var(--bone);font-weight:700;cursor:pointer;}
+  .difficulty-btn.selected{border-color:var(--toxic);background:rgba(159,212,54,.16);color:var(--toxic);box-shadow:0 0 0 1px var(--toxic-dim);}
+  .tutorial-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+  .tutorial-actions .btn-primary{font-size:22px;}
+  @media(max-height:700px){#tutorial-screen{justify-content:flex-start}.tutorial-card{padding:18px;margin:10px 0}}
+
+</style>
+</head>
+<body>
+
+<div id="vignette"></div>
+<svg id="grain" width="100%" height="100%">
+  <filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/></filter>
+  <rect width="100%" height="100%" filter="url(#n)"/>
+</svg>
+<div id="flash"></div>
+<div id="toast"></div>
+
+<div id="app">
+
+  <!-- START -->
+  <div class="screen active" id="start-screen">
+    <svg class="biohazard" viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="10" fill="#9fd436"/>
+      <g stroke="#9fd436" stroke-width="7">
+        <path d="M50 50 L50 18 A26 26 0 0 1 72 32 Z" fill="#9fd436" stroke="none"/>
+        <path d="M50 50 L78 65 A26 26 0 0 1 61 88 Z" fill="#9fd436" stroke="none"/>
+        <path d="M50 50 L22 65 A26 26 0 0 0 39 88 Z" fill="#9fd436" stroke="none"/>
+      </g>
+    </svg>
+    <div class="brand-mark">ENGLISH SURVIVAL · EASY MODE</div>
+    <div class="title-big stencil">SHELTER <span>21</span></div>
+    <p class="subtitle">The zombies are coming! Answer simple English questions about hobbies and vacations. Take your time, choose the best answer, and survive all 5 levels. 🧟‍♂️🏖️🎸</p>
+    <button class="btn-primary" onclick="showTutorial()">START GAME</button>
+    <div class="legend-row">
+      <div class="legend-item"><span class="legend-dot" style="background:var(--toxic)"></span>Correct answer = zombie defeated</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--blood-bright)"></span>Wrong answer = damage (-HP)</div>
+    </div>
+  </div>
+
+  <!-- TUTORIAL -->
+  <div class="screen" id="tutorial-screen">
+    <div class="brand-mark">SHELTER 21 · SURVIVAL GUIDE</div>
+    <div class="title-big stencil" style="font-size:clamp(34px,7vw,60px)">HOW TO <span>PLAY</span></div>
+    <div class="tutorial-card">
+      <h2>MISSION BRIEFING</h2>
+      <ol>
+        <li>Read the English question carefully.</li>
+        <li>Choose the correct answer from the four options.</li>
+        <li>A correct answer defeats a zombie and gives you points.</li>
+        <li>A wrong answer or running out of time reduces your health (HP).</li>
+        <li>Complete all 5 levels before your HP reaches zero to survive!</li>
+      </ol>
+      <h2>CHOOSE YOUR DIFFICULTY</h2>
+      <div class="difficulty-row" id="difficulty-row">
+        <button class="difficulty-btn selected" data-difficulty="easy" onclick="selectDifficulty('easy',this)">EASY</button>
+        <button class="difficulty-btn" data-difficulty="medium" onclick="selectDifficulty('medium',this)">MEDIUM</button>
+        <button class="difficulty-btn" data-difficulty="hard" onclick="selectDifficulty('hard',this)">HARD</button>
+        <button class="difficulty-btn" data-difficulty="expert" onclick="selectDifficulty('expert',this)">EXPERT</button>
+      </div>
+      <p id="difficulty-description" style="color:var(--bone-dim);margin:0">Easy: more time and less damage.</p>
+    </div>
+    <div class="tutorial-actions">
+      <button class="btn-secondary" onclick="goStart()">BACK</button>
+      <button class="btn-primary" onclick="startGame()">LET'S PLAY!</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="game-screen">
+    <div class="hud">
+      <div class="hud-top">
+        <div class="wave-tag stencil" id="wave-label">LEVEL 1 · EASY<small id="wave-sub">Basic English</small></div>
+        <div style="display:flex;gap:22px;">
+          <div class="stat-block"><div class="num stencil" id="score-num">0</div><div class="lbl">ZOMBIES</div></div>
+          <div class="stat-block"><div class="num stencil" id="streak-num">0</div><div class="lbl">STREAK</div></div>
+        </div>
+      </div>
+      <div class="hp-row">
+        <svg class="hp-icon" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7-4.35-9.5-9C.9 7.2 3 3.5 6.8 3.5c2 0 3.6 1.1 5.2 3 1.6-1.9 3.2-3 5.2-3C20.9 3.5 23.1 7.2 21.5 11c-2.5 4.65-9.5 9-9.5 9z" fill="#9fd436"/></svg>
+        <div class="hp-bar-track"><div class="hp-bar-fill" id="hp-fill"></div></div>
+        <div class="hp-num" id="hp-num">100</div>
+      </div>
+      <div class="danger-track"><div class="danger-fill" id="timer-fill"></div></div>
+    </div>
+
+    <div class="card">
+      <span class="category-chip" id="category-chip">THIS IS A/AN</span>
+      <div class="question-text" id="question-text">Cargando...</div>
+      <div class="answers-grid" id="answers-grid"></div>
+      <div class="explanation-box" id="explanation-box" aria-live="polite">
+        <strong id="explanation-title">💡 GRAMMAR CLUE</strong>
+        <div id="explanation-text" class="why-answer"></div>
+      </div>
+      <button class="continue-btn" id="continue-btn" onclick="nextStep()">CONTINUE →</button>
+      <div class="streak-note" id="streak-note"></div>
+    </div>
+  </div>
+
+  <!-- END -->
+  <div class="screen" id="end-screen">
+    <div id="end-title" class="stencil">LOADING</div>
+    <p id="end-sub"></p>
+    <div class="stats-panel">
+      <div class="cell"><div class="num stencil" id="final-score">0</div><div class="lbl">ZOMBIES</div></div>
+      <div class="cell"><div class="num stencil" id="final-best-streak">0</div><div class="lbl">BEST STREAK</div></div>
+      <div class="cell"><div class="num stencil" id="final-hp">0</div><div class="lbl">HP LEFT</div></div>
+    </div>
+    <div class="end-btn-row">
+      <button class="btn-primary" onclick="startGame()">PLAY AGAIN</button>
+      <button class="btn-secondary" onclick="goStart()">MENU</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="credit">SHELTER 21 — educational English survival game</div>
+
+<script>
+/* =========================================================
+   BANCO DE PREGUNTAS
+   ========================================================= */
+const WAVES = [
+  {
+    id:1,
+    label:"LEVEL 1 · EASY",
+    sub:"Basic hobbies",
+    time:15,
+    damage:15,
+    questions:[
+      {cat:"HOBBIES", q:"What do you like to do in your free time?",
+       opts:["I like drawing","I am drawing yesterday","I draw tomorrow","I likes draw"], a:0},
+      {cat:"CAN", q:"You like music. What can you do?",
+       opts:["I can play guitar","I can playing guitar","I can played guitar","I can plays guitar"], a:0},
+      {cat:"LIKE", q:"Choose the correct sentence.",
+       opts:["I like video games.","I likes video games.","I liking video games.","I liked video games tomorrow."], a:0},
+      {cat:"HOBBY", q:"What is a hobby?",
+       opts:["Reading books","Sleeping at school","Going yesterday","A blue"], a:0},
+      {cat:"FREE TIME", q:"What do you do after school?",
+       opts:["I play guitar.","I played tomorrow.","I am play.","I plays guitar."], a:0},
+      {cat:"PREFERENCE", q:"Which sentence is correct?",
+       opts:["She likes painting.","She like painting.","She liking painting.","She likes paint yesterday."], a:0}
+    ]
+  },
+  {
+    id:2,
+    label:"LEVEL 2 · EASY",
+    sub:"More hobbies",
+    time:15,
+    damage:15,
+    questions:[
+      {cat:"HOBBIES", q:"Tom loves football. What is his hobby?",
+       opts:["Playing football","Cooking tomorrow","Swimming yesterday","Reading a sandwich"], a:0},
+      {cat:"CAN", q:"Can you swim?",
+       opts:["Yes, I can.","Yes, I am.","Yes, I do can.","Yes, I swimming."], a:0},
+      {cat:"ROUTINE", q:"I like books. What do I like?",
+       opts:["Reading","Running tomorrow","Eat yesterday","Sings"], a:0},
+      {cat:"LIKE", q:"Choose the correct sentence.",
+       opts:["They like dancing.","They likes dancing.","They like dance yesterday.","They liking dancing."], a:0},
+      {cat:"HOBBY", q:"Which one is a hobby?",
+       opts:["Taking photos","Being late","A suitcase","Yesterday"], a:0},
+      {cat:"QUESTION", q:"What is your favorite hobby?",
+       opts:["My favorite hobby is drawing.","My hobby are drawing.","I am hobby drawing.","My favorite hobby draw yesterday."], a:0}
+    ]
+  },
+  {
+    id:3,
+    label:"LEVEL 3 · EASY",
+    sub:"Vacation time",
+    time:16,
+    damage:18,
+    questions:[
+      {cat:"VACATION", q:"Where can you go on vacation?",
+       opts:["To the beach","To yesterday","To happy","To swimming"], a:0},
+      {cat:"PAST", q:"Last summer, I ___ to the beach.",
+       opts:["went","go","going","will go"], a:0},
+      {cat:"FUTURE", q:"Next week, we ___ on vacation.",
+       opts:["will travel","traveled","travel yesterday","travels"], a:0},
+      {cat:"VACATION", q:"What do you need for a day at the beach?",
+       opts:["Sunscreen","A school test","A winter exam","A keyboard"], a:0},
+      {cat:"PAST", q:"Yesterday, she ___ photos on vacation.",
+       opts:["took","take","takes","will take"], a:0},
+      {cat:"PLAN", q:"We are going to ___ a hotel.",
+       opts:["stay at","stayed at","stays at","staying at"], a:0}
+    ]
+  },
+  {
+    id:4,
+    label:"LEVEL 4 · EASY",
+    sub:"Hobbies & vacations",
+    time:17,
+    damage:18,
+    questions:[
+      {cat:"HOBBY", q:"Maria likes music. What can she do?",
+       opts:["She can sing.","She can singing.","She can sang.","She can sings."], a:0},
+      {cat:"VACATION", q:"Where did you go last summer?",
+       opts:["I went to the beach.","I go tomorrow.","I will went to the beach.","I going beach."], a:0},
+      {cat:"FUTURE", q:"What will you do on vacation?",
+       opts:["I will swim.","I swam yesterday.","I swimming now.","I swims yesterday."], a:0},
+      {cat:"PREFERENCE", q:"Which sentence is correct?",
+       opts:["I like playing games.","I likes playing games.","I like play yesterday.","I liking games."], a:0},
+      {cat:"TRAVEL", q:"What can you take on a vacation?",
+       opts:["A suitcase","A classroom","A homework test","A school bell"], a:0},
+      {cat:"MIXED", q:"Choose the correct sentence.",
+       opts:["I like traveling with my family.","I likes travel family.","I traveled tomorrow.","I am like vacation."], a:0},
+      {cat:"MIXED", q:"What is your favorite vacation activity?",
+       opts:["Swimming","Yesterday","A suitcase","Blue"], a:0},
+      {cat:"MIXED", q:"Last weekend, we ___ photos.",
+       opts:["took","take","will take","taking"], a:0}
+    ]
+  },
+  {
+    id:5,
+    label:"LEVEL 5 · FINAL CHALLENGE",
+    sub:"Final survival test",
+    time:18,
+    damage:20,
+    questions:[
+      {cat:"PRESENT", q:"She usually ___ books before bed.", opts:["reads","read","reading","will read"], a:0},
+      {cat:"PAST", q:"We ___ to the mountains last winter.", opts:["went","go","going","will go"], a:0},
+      {cat:"FUTURE", q:"Next summer, I ___ my cousins.", opts:["will visit","visited","visits","visiting"], a:0},
+      {cat:"HOBBIES", q:"Which sentence describes a hobby?", opts:["I enjoy playing the guitar.","I enjoys play guitar.","I enjoying guitar yesterday.","I will enjoys guitar."], a:0},
+      {cat:"VACATION", q:"They are going to ___ in a hotel.", opts:["stay","stayed","staying","stays"], a:0},
+      {cat:"PRESENT CONTINUOUS", q:"Look! The children ___ in the pool.", opts:["are swimming","swim yesterday","will swimming","swims"], a:0},
+      {cat:"MIXED", q:"Choose the correct sentence.", opts:["He played tennis yesterday.","He play tennis yesterday.","He playing tennis tomorrow.","He plays tennis last week."], a:0},
+      {cat:"TRAVEL", q:"What should you pack for a vacation?", opts:["Clothes and a suitcase","A blackboard","A school desk","A traffic light"], a:0}
+    ]
+  }
+];
+
+/* =========================================================
+   ESTADO DEL JUEGO
+   ========================================================= */
+let state = {};
+let selectedDifficulty = 'easy';
+const DIFFICULTIES = {
+  easy:{label:'EASY',time:1.35,damage:0.7,description:'Easy: more time and less damage.'},
+  medium:{label:'MEDIUM',time:1,damage:1,description:'Medium: balanced time and damage.'},
+  hard:{label:'HARD',time:0.78,damage:1.35,description:'Hard: less time and more damage.'},
+  expert:{label:'EXPERT',time:0.62,damage:1.7,description:'Expert: very little time and high damage!'}
+};
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function goStart(){
+  showScreen('start-screen');
+}
+
+function showTutorial(){
+  showScreen('tutorial-screen');
+}
+
+function selectDifficulty(level, button){
+  selectedDifficulty = level;
+  document.querySelectorAll('.difficulty-btn').forEach(b=>b.classList.toggle('selected', b===button));
+  document.getElementById('difficulty-description').textContent = DIFFICULTIES[level].description;
+}
+
+function startGame(){
+  state = {
+    waveIndex:0,
+    difficulty:selectedDifficulty,
+    qIndex:0,
+    hp:100,
+    score:0,
+    streak:0,
+    bestStreak:0,
+    currentQueue: shuffle(WAVES[0].questions),
+    answered:false,
+    timerHandle:null
+  };
+  showScreen('game-screen');
+  loadWave(0);
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function loadWave(idx){
+  state.waveIndex = idx;
+  state.qIndex = 0;
+  state.currentQueue = shuffle(WAVES[idx].questions);
+  document.getElementById('wave-label').innerHTML =
+    WAVES[idx].label + ' · ' + DIFFICULTIES[state.difficulty].label + '<small id="wave-sub">' + WAVES[idx].sub + '</small>';
+  showToast('LEVEL ' + WAVES[idx].id + ' · ' + DIFFICULTIES[state.difficulty].label, 'good');
+  renderQuestion();
+}
+
+/* Shuffle answer positions so the correct answer is not always in the same spot. */
+function shuffleQuestionOptions(question){
+  const options = question.opts.map((text, index) => ({
+    text,
+    correct: index === question.a
+  }));
+
+  for(let i = options.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [options[i], options[j]] = [options[j], options[i]];
+  }
+
+  question.opts = options.map(o => o.text);
+  question.a = options.findIndex(o => o.correct);
+}
+
+function shuffleQuestionOptions(q){
+  // Mezcla las respuestas de forma aleatoria y conserva cuál es la correcta.
+  const items = q.opts.map((text, index) => ({
+    text: text,
+    isCorrect: index === q.a
+  }));
+
+  for(let i = items.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = items[i];
+    items[i] = items[j];
+    items[j] = temp;
+  }
+
+  q.opts = items.map(item => item.text);
+  q.a = items.findIndex(item => item.isCorrect);
+}
+
+const EXPLANATIONS = {"What do you like to do in your free time?": "We use <b>like + verb-ing</b> or <b>like + noun</b> to talk about preferences. ‘I like drawing’ means drawing is an activity you enjoy. The other choices mix past, future, or incorrect verb forms.", "You like music. What can you do?": "After <b>can</b>, use the base form of the verb: <b>can + play</b>. Do not add -ing, -ed, or -s after can.", "Choose the correct sentence.": "<b>Yesterday</b> signals the past. ‘Played’ is the past form of ‘play’, and it agrees with ‘he’: ‘He played tennis yesterday’.", "What is a hobby?": "A hobby is an activity someone enjoys doing in free time. <b>Reading books</b> is an activity; the other options are not hobbies in this context.", "What do you do after school?": "For a routine or usual activity, use the <b>present simple</b>: ‘I play guitar’. With ‘I’, the verb does not take -s.", "Which sentence is correct?": "With <b>she/he/it</b> in the present simple, add <b>-s</b> to the verb: ‘She likes’. After ‘like’, an activity can use the -ing form: ‘painting’.", "Tom loves football. What is his hobby?": "A hobby is an activity. <b>Playing football</b> names an activity Tom enjoys; the other choices do not fit the question.", "Can you swim?": "A short answer to ‘Can you…?’ uses <b>Yes, I can</b> or ‘No, I can’t’. Repeat the helping verb ‘can’.", "I like books. What do I like?": "The question asks for an activity connected with books. <b>Reading</b> is the activity; the other options do not fit the meaning or time expression.", "What is your favorite hobby?": "The question asks for one hobby. ‘My favorite hobby <b>is</b> drawing’ is correct because ‘hobby’ is singular and takes ‘is’.", "Where can you go on vacation?": "After <b>go</b>, we can name a destination: ‘go to the beach’. The other options are not places.", "Last summer, I ___ to the beach.": "<b>Last summer</b> signals the past. The past form of ‘go’ is <b>went</b>. ‘Go’ is present, ‘going’ needs an auxiliary, and ‘will go’ is future.", "Next week, we ___ on vacation.": "<b>Next week</b> refers to the future. ‘Will travel’ uses <b>will + base verb</b> to talk about a future action.", "What do you need for a day at the beach?": "<b>Sunscreen</b> is useful for a day at the beach because it protects skin from the sun. The other options are school items, not beach essentials.", "Yesterday, she ___ photos on vacation.": "<b>Yesterday</b> signals the past. The past form of ‘take’ is <b>took</b>: ‘She took photos’.", "We are going to ___ a hotel.": "After <b>going to</b>, use the base form of the verb: <b>stay</b>. The phrase is ‘going to stay at a hotel’.", "Maria likes music. What can she do?": "After <b>can</b>, use the base verb <b>sing</b>. Do not say ‘can singing’, ‘can sang’, or ‘can sings’.", "Where did you go last summer?": "In a question with <b>did</b>, the answer uses the past form. ‘I went to the beach’ correctly describes a completed trip.", "What will you do on vacation?": "For a future plan with <b>will</b>, use the base verb: ‘will swim’. ‘Swam’ is past and ‘swimming’ needs an auxiliary.", "What can you take on a vacation?": "A <b>suitcase</b> is something people pack and take when they travel. The other options are classroom or school objects.", "What is your favorite vacation activity?": "The question asks for an activity. <b>Swimming</b> is an activity; ‘yesterday’, ‘a suitcase’, and ‘blue’ are not activities.", "Last weekend, we ___ photos.": "<b>Last weekend</b> is in the past. The past form of ‘take’ is <b>took</b>, so we say ‘we took photos’.", "She usually ___ books before bed.": "<b>Usually</b> describes a routine, so use the present simple. With <b>she</b>, add -s: <b>reads</b>.", "We ___ to the mountains last winter.": "<b>Last winter</b> signals the past. The past form of ‘go’ is <b>went</b>.", "Next summer, I ___ my cousins.": "<b>Next summer</b> refers to the future. ‘Will visit’ follows the structure <b>will + base verb</b>.", "Which sentence describes a hobby?": "The verb <b>enjoy</b> is followed by an -ing form: ‘enjoy playing’. With ‘I’, use ‘enjoy’, not ‘enjoys’.", "They are going to ___ in a hotel.": "After <b>are going to</b>, use the base verb <b>stay</b>. The correct structure is ‘are going to stay’.", "Look! The children ___ in the pool.": "<b>Look!</b> tells us the action is happening now. Present continuous uses <b>are + verb-ing</b>: ‘are swimming’.", "What should you pack for a vacation?": "<b>Clothes and a suitcase</b> are things you need for a trip. A blackboard, school desk, and traffic light are not things you normally pack."};
+
+function getExplanation(q){
+  if(q.q === 'Choose the correct sentence.' && q.cat === 'LIKE') return 'With the subject <b>I</b>, use <b>like</b> without -s. The sentence describes a general preference, so the present simple is correct.';
+  if(q.q === 'Choose the correct sentence.' && q.cat === 'PREFERENCE') return 'With <b>she</b>, the present simple verb takes <b>-s</b>: ‘She likes’. For an activity after ‘like’, use the -ing form: ‘painting’.';
+  if(q.q === 'Choose the correct sentence.' && q.cat === 'MIXED') return 'Check the subject and the time clue. In ‘He played tennis yesterday’, <b>yesterday</b> requires the past form <b>played</b>.';
+  const specific = EXPLANATIONS[q.q];
+  if(specific) return specific;
+  if(q.cat === 'MIXED') return 'Look for the time clue and the subject. The correct option must match both the meaning and the verb tense of the sentence.';
+  return 'Check the subject, the time expression, and the verb form. The correct answer is the only option that makes a complete sentence with the right meaning and grammar.';
+}
+
+function getGrammarHint(q){
+  const text = q.q.toLowerCase();
+  if (text.includes('can ')) return 'CLUE: After CAN, use the base form of the verb. Do not add -s, -ed, or -ing.';
+  if (text.includes('yesterday') || text.includes('last summer') || text.includes('last weekend') || text.includes('last winter')) return 'CLUE: Look at the time expression. It tells you when the action happened.';
+  if (text.includes('next week') || text.includes('next summer') || text.includes('will')) return 'CLUE: This sentence talks about the future. Check the verb structure used for future plans.';
+  if (text.includes('usually') || text.includes('after school') || text.includes('free time')) return 'CLUE: This is about routines or preferences. Check the present simple and the subject.';
+  if (q.cat === 'LIKE' || q.cat === 'PREFERENCE') return 'CLUE: Pay attention to who does the action (I, he, she, they) and the verb form after LIKE.';
+  if (q.cat === 'HOBBY') return 'CLUE: A hobby is an activity someone enjoys doing in their free time. Choose the option that names an activity.';
+  if (q.cat === 'VACATION') return 'CLUE: Think about the meaning of the sentence and which word belongs in a travel or holiday context.';
+  return 'CLUE: Read the whole sentence. Check its meaning, the subject, and the verb tense before choosing.';
+}
+
+function revealExplanation(q){
+  const box=document.getElementById('explanation-box');
+  document.getElementById('explanation-title').textContent='💡 WHY IS THIS THE ANSWER?';
+  document.getElementById('explanation-text').innerHTML=getExplanation(q);
+  box.classList.add('show');
+  document.getElementById('continue-btn').classList.add('show');
+}
+
+function renderQuestion(){
+  state.answered = false;
+  document.getElementById('explanation-box').classList.add('show');
+  document.getElementById('explanation-title').textContent='💡 GRAMMAR CLUE';
+  document.getElementById('explanation-text').textContent=getGrammarHint(state.currentQueue[state.qIndex]);
+  document.getElementById('continue-btn').classList.remove('show');
+  const wave = WAVES[state.waveIndex];
+  const q = state.currentQueue[state.qIndex];
+
+  // 🔀 ¡RESPUESTAS VARIADAS! La correcta puede aparecer en A, B, C o D.
+  shuffleQuestionOptions(q);
+
+  document.getElementById('category-chip').textContent = q.cat;
+  document.getElementById('question-text').textContent = q.q;
+  document.getElementById('score-num').textContent = state.score;
+  document.getElementById('streak-num').textContent = state.streak;
+
+  const grid = document.getElementById('answers-grid');
+  grid.innerHTML = '';
+  q.opts.forEach((opt, i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = opt;
+    btn.onclick = ()=> handleAnswer(i, q.a, btn, grid);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('streak-note').innerHTML =
+    state.streak >= 2 ? 'Racha activa: <b>x' + state.streak + '</b> bonus de puntos' : '';
+
+  updateHpBar();
+  startTimer(Math.max(7, Math.round(wave.time * DIFFICULTIES[state.difficulty].time)));
+}
+
+function startTimer(seconds){
+  const fill = document.getElementById('timer-fill');
+  fill.style.transition = 'none';
+  fill.style.width = '100%';
+  // forzar reflow
+  void fill.offsetWidth;
+  fill.style.transition = 'width ' + seconds + 's linear';
+  fill.style.width = '0%';
+
+  clearTimeout(state.timerHandle);
+  state.timerHandle = setTimeout(()=>{
+    if(!state.answered){
+      handleTimeout();
+    }
+  }, seconds*1000);
+}
+
+function stopTimerVisual(){
+  const fill = document.getElementById('timer-fill');
+  const computed = getComputedStyle(fill).width;
+  fill.style.transition = 'none';
+  fill.style.width = computed;
+}
+
+function handleTimeout(){
+  if(state.answered) return;
+  state.answered = true;
+  clearTimeout(state.timerHandle);
+  const q = state.currentQueue[state.qIndex];
+  const grid = document.getElementById('answers-grid');
+  [...grid.children].forEach((b,i)=>{
+    b.disabled = true;
+    if(i === q.a) b.classList.add('correct');
+  });
+  applyDamage();
+  showToast('TIME OUT! YOU TOOK DAMAGE', 'bad');
+  flash('bad');
+  state.streak = 0;
+  revealExplanation(q);
+  state.advanceHandle = setTimeout(nextStep, 9000);
+}
+
+function handleAnswer(chosen, correctIdx, btn, grid){
+  if(state.answered) return;
+  state.answered = true;
+  clearTimeout(state.timerHandle);
+  stopTimerVisual();
+
+  const buttons = [...grid.children];
+  buttons.forEach(b=>b.disabled = true);
+
+  if(chosen === correctIdx){
+    btn.classList.add('correct');
+    state.streak += 1;
+    state.bestStreak = Math.max(state.bestStreak, state.streak);
+    const bonus = 100 + Math.max(0, state.streak-1) * 25;
+    state.score += bonus;
+    if(state.streak > 0 && state.streak % 4 === 0){
+      state.hp = Math.min(100, state.hp + 10);
+      showToast('MEDKIT! +10 HP · STREAK x' + state.streak, 'good');
+    } else {
+      showToast('ZOMBIE DEFEATED! +' + bonus, 'good');
+    }
+    flash('good');
+  } else {
+    btn.classList.add('wrong');
+    buttons[correctIdx].classList.add('correct');
+    applyDamage();
+    state.streak = 0;
+    showToast('WRONG ANSWER! YOU TOOK DAMAGE', 'bad');
+    flash('bad');
+  }
+
+  document.getElementById('score-num').textContent = state.score;
+  document.getElementById('streak-num').textContent = state.streak;
+  revealExplanation(q);
+  state.advanceHandle = setTimeout(nextStep, 9000);
+}
+
+function applyDamage(){
+  const baseDamage = WAVES[state.waveIndex].damage;
+  const dmg = Math.round(baseDamage * DIFFICULTIES[state.difficulty].damage);
+  state.hp = Math.max(0, state.hp - dmg);
+  updateHpBar();
+}
+
+function updateHpBar(){
+  const fill = document.getElementById('hp-fill');
+  fill.style.width = state.hp + '%';
+  fill.classList.toggle('low', state.hp <= 35);
+  document.getElementById('hp-num').textContent = state.hp;
+}
+
+function nextStep(){
+  clearTimeout(state.advanceHandle);
+  if(state.hp <= 0){
+    endGame(false);
+    return;
+  }
+  state.qIndex += 1;
+  if(state.qIndex >= state.currentQueue.length){
+    if(state.waveIndex + 1 >= WAVES.length){
+      endGame(true);
+      return;
+    }
+    loadWave(state.waveIndex + 1);
+  } else {
+    renderQuestion();
+  }
+}
+
+function endGame(won){
+  clearTimeout(state.timerHandle);
+  showScreen('end-screen');
+  const title = document.getElementById('end-title');
+  const sub = document.getElementById('end-sub');
+  if(won){
+    title.textContent = 'SHELTER REACHED';
+    title.className = 'stencil win';
+    sub.textContent = 'You survived all 5 levels and practiced English about hobbies and vacations!';
+  } else {
+    title.textContent = 'GAME OVER';
+    title.className = 'stencil lose';
+    sub.textContent = 'The zombies caught you! Review the easy questions and try again.';
+  }
+  document.getElementById('final-score').textContent = state.score;
+  document.getElementById('final-best-streak').textContent = state.bestStreak;
+  document.getElementById('final-hp').textContent = state.hp;
+}
+
+function showToast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._h);
+  t._h = setTimeout(()=> t.className = type, 900);
+}
+
+function flash(type){
+  const f = document.getElementById('flash');
+  f.className = 'show hit-' + type;
+  setTimeout(()=> f.className = '', 220);
+}
+
+
+
+</script>
+</body>
+</html>
